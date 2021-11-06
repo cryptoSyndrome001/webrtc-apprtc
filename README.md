@@ -1,1018 +1,155 @@
-Contribution: 2019-04-08 20:00
+[![Build Status](https://travis-ci.org/webrtc/apprtc.svg?branch=master)](https://travis-ci.org/webrtc/apprtc)
 
-Contribution: 2019-04-08 20:01
+# AppRTC Demo Code
 
-Contribution: 2019-04-08 20:02
+## Development
 
-Contribution: 2019-04-11 20:00
+Detailed information on developing in the [webrtc](https://github.com/webrtc) github repo can be found in the [WebRTC GitHub repo developer's guide](https://docs.google.com/document/d/1tn1t6LW2ffzGuYTK3366w1fhTkkzsSvHsBnOHoDfRzY/edit?pli=1#heading=h.e3366rrgmkdk).
 
-Contribution: 2019-04-11 20:01
+The development AppRTC server can be accessed by visiting [http://localhost:8080](http://localhost:8080).
 
-Contribution: 2019-04-11 20:02
+Running AppRTC locally requires [Google App Engine SDK for Python](https://cloud.google.com/appengine/downloads#Google_App_Engine_SDK_for_Python),
+[Node.js](https://nodejs.org) and [Grunt](http://gruntjs.com/).
 
-Contribution: 2019-04-11 20:03
+Follow the instructions on [Node.js website](https://nodejs.org), [Python PIP](https://pip.pypa.io/en/stable/installing/) and on [Grunt website](http://gruntjs.com/) to install them.
 
-Contribution: 2019-04-11 20:04
+When Node.js and Grunt are available you can install the required dependencies
+running `npm install` and `pip install -r requirements.txt` from the project root folder.
 
-Contribution: 2019-04-11 20:05
+Before you start the AppRTC dev server and everytime you update the source code
+you need to recompile the App Engine package by running `grunt build`.
 
-Contribution: 2019-04-11 20:06
+Start the AppRTC dev server from the `out/app_engine` directory by running the Google App Engine SDK dev server,
 
-Contribution: 2019-04-13 20:00
+```
+<path to sdk>/dev_appserver.py ./out/app_engine
+```
+Then navigate to http://localhost:8080 in your browser (given it's on the same machine).
 
-Contribution: 2019-04-14 20:00
+## Testing
 
-Contribution: 2019-04-14 20:01
+You can run all tests by running `grunt`.
 
-Contribution: 2019-04-15 20:00
+To run only the Python tests you can call,
 
-Contribution: 2019-04-15 20:01
+```
+grunt runPythonTests
+```
 
-Contribution: 2019-04-15 20:02
+## Deployment
+Instructions were performed on Ubuntu 14.04 using Python 2.7.6 and Go 1.6.3.
 
-Contribution: 2019-04-19 20:00
+1. Clone the AppRTC repository
+2. Do all the steps in the [Collider instructions](https://github.com/webrtc/apprtc/blob/master/src/collider/README.md) then continue on step 3.
+3. Install and start a Coturn TURN server according to the [instructions](https://github.com/coturn/coturn/wiki/CoturnConfig) on the project page.
+4. Open [src/app_engine/constants.py](https://github.com/webrtc/apprtc/blob/master/src/app_engine/constants.py) and do the following:
 
-Contribution: 2019-04-19 20:01
+### Collider
+ * **If using Google Cloud Engine VM's for Collider**
+    * Change `WSS_INSTANCE_HOST_KEY`, `WSS_INSTANCE_NAME_KEY` and `WSS_INSTANCE_ZONE_KEY` to corresponding values for your VM instances which can be found in the Google Cloud Engine management console.
+ * **Else if using other VM hosting solution**
+    *  Change `WSS_INSTANCE_HOST_KEY` to the hostname and port Collider is listening too, e.g. `localhost:8089` or `otherHost:443`.
 
-Contribution: 2019-04-19 20:02
+### TURN/STUN
 
-Contribution: 2019-04-19 20:03
+* **If using TURN and STUN servers directly**
 
-Contribution: 2019-04-19 20:04
+    Either:
 
-Contribution: 2019-04-21 20:00
+    * Comment out `TURN_SERVER_OVERRIDE = []` and then uncomment `TURN_SERVER_OVERRIDE = [ { "urls":...]` three lines below and fill your TURN server details, e.g.
 
-Contribution: 2019-04-21 20:01
+    ```python
+    TURN_SERVER_OVERRIDE = [
+      {
+        "urls": [
+          "turn:hostnameForYourTurnServer:19305?transport=udp",
+          "turn:hostnameForYourTurnServer:19305?transport=tcp"
+        ],
+        "username": "TurnServerUsername",
+        "credential": "TurnServerCredentials"
+      },
+      {
+        "urls": [
+          "stun:hostnameForYourStunServer:19302"
+        ]
+      }
+    ]
+    ```
 
-Contribution: 2019-04-21 20:02
+    * Or:
 
-Contribution: 2019-04-21 20:03
+    Set the the comma-separated list of STUN servers in app.yaml. e.g.
 
-Contribution: 2019-04-21 20:04
+    ```
+    ICE_SERVER_URLS: "stun:hostnameForYourStunServer,stun:hostnameForYourSecondStunServer"
+    ```
 
-Contribution: 2019-04-21 20:05
+* **Else if using ICE Server provider [1]**
+  * Change `ICE_SERVER_BASE_URL` to your ICE server provider host.
+  * Change `ICE_SERVER_URL_TEMPLATE` to a path or empty string depending if your ICE server provider has a specific URL path or not.
+  * Change `ICE_SERVER_API_KEY` to an API key or empty string depending if your ICE server provider requires an API key to access it or not.
 
-Contribution: 2019-04-21 20:06
+  ```python
+  ICE_SERVER_BASE_URL = 'https://appr.tc'
+  ICE_SERVER_URL_TEMPLATE = '%s/v1alpha/iceconfig?key=%s'
+  ICE_SERVER_API_KEY = os.environ.get('ICE_SERVER_API_KEY')
+  ```
 
-Contribution: 2019-04-21 20:07
+8\. Build AppRTC using `grunt build` then deploy/run:
+* **If running locally using the Google App Engine dev server (dev/testing purposes)**
+    * Start it using dev appserver provided by the Google app engine SDK `pathToGcloudSDK/platform/google_appengine/dev_appserver.py  out/app_engine/`.
 
-Contribution: 2019-04-23 20:00
+* **Else if running on Google App Engine in the Google Cloud (production)**
+  * Make sure you have a [Google Cloud Account and Google App Engine enabled](https://cloud.google.com/appengine/docs/python/quickstart).
+  * [Download the Google Cloud SDK and initialize it](https://cloud.google.com/appengine/docs/python/tools/uploadinganapp).
+  * Deploy your AppRTC app by executing the following in the out/app_engine directory `gcloud app deploy --project [YOUR_PROJECT_ID] -v [YOUR_VERSION_ID]` (You can find the [YOUR_PROJECT_ID] and [YOUR_VERSION_ID] in your Google cloud console).
 
-Contribution: 2019-04-23 20:01
+9\. Open a WebRTC enabled browser and navigate to `http://localhost:8080` or
+`https://[YOUR_VERSION_ID]-dot-[YOUR_PROJECT_ID]` (append `?wstls=false` to the
+URL if you have TLS disabled on Collider for dev/testing purposes).
 
-Contribution: 2019-04-23 20:02
+## Advanced Topics
+### Enabling Local Logging
 
-Contribution: 2019-04-23 20:03
+*Note that logging is automatically enabled when running on Google App Engine using an implicit service account.*
 
-Contribution: 2019-04-23 20:04
+By default, logging to a BigQuery from the development server is disabled. Log information is presented on the console. Unless you are modifying the analytics API you will not need to enable remote logging.
 
-Contribution: 2019-04-23 20:05
+Logging to BigQuery when running LOCALLY requires a `secrets.json` containing Service Account credentials to a Google Developer project where BigQuery is enabled. DO NOT COMMIT `secrets.json` TO THE REPOSITORY.
 
-Contribution: 2019-04-23 20:06
+To generate a `secrets.json` file in the Google Developers Console for your
+project:
 
-Contribution: 2019-04-24 20:00
+1. Go to the project page.
+2. Under *APIs & auth* select *Credentials*.
+3. Confirm a *Service Account* already exists or create it by selecting *Create new Client ID*.
+4. Select *Generate new JSON key* from the *Service Account* area to create and download JSON credentials.
+5. Rename the downloaded file to `secrets.json` and place in the directory containing `analytics.py`.
 
-Contribution: 2019-04-24 20:01
+When the `Analytics` class detects that AppRTC is running locally, all data is logged to `analytics` table in the `dev` dataset. You can bootstrap the `dev` dataset by following the instructions in the [Bootstrapping/Updating BigQuery](#bootstrappingupdating-bigquery).
 
-Contribution: 2019-04-24 20:02
+### BigQuery
 
-Contribution: 2019-04-24 20:03
+When running on App Engine the `Analytics` class will log to `analytics` table in the `prod` dataset for whatever project is defined in `app.yaml`.
 
-Contribution: 2019-04-24 20:04
+#### Schema
 
-Contribution: 2019-04-24 20:05
+`bigquery/analytics_schema.json` contains the fields used in the BigQuery table. New fields can be added to the schema and the table updated. However, fields *cannot* be renamed or removed. *Caution should be taken when updating the production table as reverting schema updates is difficult.*
 
-Contribution: 2019-04-24 20:06
+Update the BigQuery table from the schema by running,
 
-Contribution: 2019-04-25 20:00
+```
+bq update -t prod.analytics bigquery/analytics_schema.json
+```
 
-Contribution: 2019-04-25 20:01
+#### Bootstrapping
 
-Contribution: 2019-04-25 20:02
+Initialize the required BigQuery datasets and tables with the following,
 
-Contribution: 2019-04-25 20:03
+```
+bq mk prod
+bq mk -t prod.analytics bigquery/analytics_schema.json
+```
 
-Contribution: 2019-04-25 20:04
-
-Contribution: 2019-04-25 20:05
-
-Contribution: 2019-04-26 20:00
-
-Contribution: 2019-04-27 20:00
-
-Contribution: 2019-04-27 20:01
-
-Contribution: 2019-04-27 20:02
-
-Contribution: 2019-04-27 20:03
-
-Contribution: 2019-04-27 20:04
-
-Contribution: 2019-04-27 20:05
-
-Contribution: 2019-04-27 20:06
-
-Contribution: 2019-04-27 20:07
-
-Contribution: 2019-04-29 20:00
-
-Contribution: 2019-04-29 20:01
-
-Contribution: 2019-04-29 20:02
-
-Contribution: 2019-04-30 20:00
-
-Contribution: 2019-04-30 20:01
-
-Contribution: 2019-04-30 20:02
-
-Contribution: 2019-05-02 20:00
-
-Contribution: 2019-05-02 20:01
-
-Contribution: 2019-05-02 20:02
-
-Contribution: 2019-05-02 20:03
-
-Contribution: 2019-05-02 20:04
-
-Contribution: 2019-05-02 20:05
-
-Contribution: 2019-05-05 20:00
-
-Contribution: 2019-05-05 20:01
-
-Contribution: 2019-05-05 20:02
-
-Contribution: 2019-05-05 20:03
-
-Contribution: 2019-05-05 20:04
-
-Contribution: 2019-05-05 20:05
-
-Contribution: 2019-05-07 20:00
-
-Contribution: 2019-05-08 20:00
-
-Contribution: 2019-05-08 20:01
-
-Contribution: 2019-05-08 20:02
-
-Contribution: 2019-05-08 20:03
-
-Contribution: 2019-05-08 20:04
-
-Contribution: 2019-05-08 20:05
-
-Contribution: 2019-05-09 20:00
-
-Contribution: 2019-05-09 20:01
-
-Contribution: 2019-05-09 20:02
-
-Contribution: 2019-05-09 20:03
-
-Contribution: 2019-05-09 20:04
-
-Contribution: 2019-05-09 20:05
-
-Contribution: 2019-05-10 20:00
-
-Contribution: 2019-05-10 20:01
-
-Contribution: 2019-05-10 20:02
-
-Contribution: 2019-05-10 20:03
-
-Contribution: 2019-05-10 20:04
-
-Contribution: 2019-05-10 20:05
-
-Contribution: 2019-05-10 20:06
-
-Contribution: 2019-05-10 20:07
-
-Contribution: 2019-05-12 20:00
-
-Contribution: 2019-05-12 20:01
-
-Contribution: 2019-05-12 20:02
-
-Contribution: 2019-05-12 20:03
-
-Contribution: 2019-05-12 20:04
-
-Contribution: 2019-05-12 20:05
-
-Contribution: 2019-05-13 20:00
-
-Contribution: 2019-05-13 20:01
-
-Contribution: 2019-05-16 20:00
-
-Contribution: 2019-05-16 20:01
-
-Contribution: 2019-05-16 20:02
-
-Contribution: 2019-05-16 20:03
-
-Contribution: 2019-05-16 20:04
-
-Contribution: 2019-05-19 20:00
-
-Contribution: 2019-05-19 20:01
-
-Contribution: 2019-05-19 20:02
-
-Contribution: 2019-05-19 20:03
-
-Contribution: 2019-05-24 20:00
-
-Contribution: 2019-05-24 20:01
-
-Contribution: 2019-05-28 20:00
-
-Contribution: 2019-05-28 20:01
-
-Contribution: 2019-05-29 20:00
-
-Contribution: 2019-05-29 20:01
-
-Contribution: 2019-05-29 20:02
-
-Contribution: 2019-05-29 20:03
-
-Contribution: 2019-05-29 20:04
-
-Contribution: 2019-05-29 20:05
-
-Contribution: 2019-05-29 20:06
-
-Contribution: 2019-05-29 20:07
-
-Contribution: 2019-06-02 20:00
-
-Contribution: 2019-06-04 20:00
-
-Contribution: 2019-06-04 20:01
-
-Contribution: 2019-06-04 20:02
-
-Contribution: 2019-06-04 20:03
-
-Contribution: 2019-06-04 20:04
-
-Contribution: 2019-06-04 20:05
-
-Contribution: 2019-06-04 20:06
-
-Contribution: 2019-06-04 20:07
-
-Contribution: 2019-06-06 20:00
-
-Contribution: 2019-06-08 20:00
-
-Contribution: 2019-06-08 20:01
-
-Contribution: 2019-06-08 20:02
-
-Contribution: 2019-06-08 20:03
-
-Contribution: 2019-06-08 20:04
-
-Contribution: 2019-06-08 20:05
-
-Contribution: 2019-06-08 20:06
-
-Contribution: 2019-06-08 20:07
-
-Contribution: 2019-06-10 20:00
-
-Contribution: 2019-06-10 20:01
-
-Contribution: 2019-06-10 20:02
-
-Contribution: 2019-06-10 20:03
-
-Contribution: 2019-06-10 20:04
-
-Contribution: 2019-06-10 20:05
-
-Contribution: 2019-06-10 20:06
-
-Contribution: 2019-06-12 20:00
-
-Contribution: 2019-06-12 20:01
-
-Contribution: 2019-06-12 20:02
-
-Contribution: 2019-06-12 20:03
-
-Contribution: 2019-06-12 20:04
-
-Contribution: 2019-06-12 20:05
-
-Contribution: 2019-06-14 20:00
-
-Contribution: 2019-06-14 20:01
-
-Contribution: 2019-06-14 20:02
-
-Contribution: 2019-06-14 20:03
-
-Contribution: 2019-06-14 20:04
-
-Contribution: 2019-06-15 20:00
-
-Contribution: 2019-06-15 20:01
-
-Contribution: 2019-06-15 20:02
-
-Contribution: 2019-06-15 20:03
-
-Contribution: 2019-06-16 20:00
-
-Contribution: 2019-06-16 20:01
-
-Contribution: 2019-06-16 20:02
-
-Contribution: 2019-06-16 20:03
-
-Contribution: 2019-06-16 20:04
-
-Contribution: 2019-06-17 20:00
-
-Contribution: 2019-06-17 20:01
-
-Contribution: 2019-06-19 20:00
-
-Contribution: 2019-06-19 20:01
-
-Contribution: 2019-06-19 20:02
-
-Contribution: 2019-06-21 20:00
-
-Contribution: 2019-06-21 20:01
-
-Contribution: 2019-06-21 20:02
-
-Contribution: 2019-06-21 20:03
-
-Contribution: 2019-06-22 20:00
-
-Contribution: 2019-06-22 20:01
-
-Contribution: 2019-06-22 20:02
-
-Contribution: 2019-06-22 20:03
-
-Contribution: 2019-06-22 20:04
-
-Contribution: 2019-06-22 20:05
-
-Contribution: 2019-06-22 20:06
-
-Contribution: 2019-06-23 20:00
-
-Contribution: 2019-06-23 20:01
-
-Contribution: 2019-06-23 20:02
-
-Contribution: 2019-06-23 20:03
-
-Contribution: 2019-06-23 20:04
-
-Contribution: 2019-06-23 20:05
-
-Contribution: 2019-06-23 20:06
-
-Contribution: 2019-06-24 20:00
-
-Contribution: 2019-06-24 20:01
-
-Contribution: 2019-06-24 20:02
-
-Contribution: 2019-06-24 20:03
-
-Contribution: 2019-06-24 20:04
-
-Contribution: 2019-06-26 20:00
-
-Contribution: 2019-06-26 20:01
-
-Contribution: 2019-06-26 20:02
-
-Contribution: 2019-06-26 20:03
-
-Contribution: 2019-06-26 20:04
-
-Contribution: 2019-06-26 20:05
-
-Contribution: 2019-06-26 20:06
-
-Contribution: 2019-06-26 20:07
-
-Contribution: 2019-06-30 20:00
-
-Contribution: 2019-06-30 20:01
-
-Contribution: 2019-06-30 20:02
-
-Contribution: 2019-06-30 20:03
-
-Contribution: 2019-06-30 20:04
-
-Contribution: 2019-06-30 20:05
-
-Contribution: 2019-07-01 20:00
-
-Contribution: 2019-07-01 20:01
-
-Contribution: 2019-07-01 20:02
-
-Contribution: 2019-07-01 20:03
-
-Contribution: 2019-07-01 20:04
-
-Contribution: 2019-07-01 20:05
-
-Contribution: 2019-07-01 20:06
-
-Contribution: 2019-07-01 20:07
-
-Contribution: 2019-07-02 20:00
-
-Contribution: 2019-07-02 20:01
-
-Contribution: 2019-07-02 20:02
-
-Contribution: 2019-07-02 20:03
-
-Contribution: 2019-07-02 20:04
-
-Contribution: 2019-07-02 20:05
-
-Contribution: 2019-07-02 20:06
-
-Contribution: 2019-07-03 20:00
-
-Contribution: 2019-07-03 20:01
-
-Contribution: 2019-07-03 20:02
-
-Contribution: 2019-07-04 20:00
-
-Contribution: 2019-07-04 20:01
-
-Contribution: 2019-07-04 20:02
-
-Contribution: 2019-07-04 20:03
-
-Contribution: 2019-07-04 20:04
-
-Contribution: 2019-07-04 20:05
-
-Contribution: 2019-07-04 20:06
-
-Contribution: 2019-07-06 20:00
-
-Contribution: 2019-07-06 20:01
-
-Contribution: 2019-07-07 20:00
-
-Contribution: 2019-07-07 20:01
-
-Contribution: 2019-07-07 20:02
-
-Contribution: 2019-07-07 20:03
-
-Contribution: 2019-07-07 20:04
-
-Contribution: 2019-07-07 20:05
-
-Contribution: 2019-07-08 20:00
-
-Contribution: 2019-07-08 20:01
-
-Contribution: 2019-07-09 20:00
-
-Contribution: 2019-07-09 20:01
-
-Contribution: 2019-07-09 20:02
-
-Contribution: 2019-07-09 20:03
-
-Contribution: 2019-07-09 20:04
-
-Contribution: 2019-07-09 20:05
-
-Contribution: 2019-07-09 20:06
-
-Contribution: 2019-07-09 20:07
-
-Contribution: 2019-07-10 20:00
-
-Contribution: 2019-07-10 20:01
-
-Contribution: 2019-07-10 20:02
-
-Contribution: 2019-07-10 20:03
-
-Contribution: 2019-07-10 20:04
-
-Contribution: 2019-07-10 20:05
-
-Contribution: 2019-07-10 20:06
-
-Contribution: 2019-07-12 20:00
-
-Contribution: 2019-07-12 20:01
-
-Contribution: 2019-07-15 20:00
-
-Contribution: 2019-07-15 20:01
-
-Contribution: 2019-07-15 20:02
-
-Contribution: 2019-07-15 20:03
-
-Contribution: 2019-07-15 20:04
-
-Contribution: 2019-07-16 20:00
-
-Contribution: 2019-07-17 20:00
-
-Contribution: 2019-07-17 20:01
-
-Contribution: 2019-07-17 20:02
-
-Contribution: 2019-07-17 20:03
-
-Contribution: 2019-07-17 20:04
-
-Contribution: 2019-07-17 20:05
-
-Contribution: 2019-07-17 20:06
-
-Contribution: 2019-07-17 20:07
-
-Contribution: 2019-07-18 20:00
-
-Contribution: 2019-07-18 20:01
-
-Contribution: 2019-07-18 20:02
-
-Contribution: 2019-07-18 20:03
-
-Contribution: 2019-07-18 20:04
-
-Contribution: 2019-07-18 20:05
-
-Contribution: 2019-07-18 20:06
-
-Contribution: 2019-07-19 20:00
-
-Contribution: 2019-07-19 20:01
-
-Contribution: 2019-07-19 20:02
-
-Contribution: 2019-07-19 20:03
-
-Contribution: 2019-07-20 20:00
-
-Contribution: 2019-07-20 20:01
-
-Contribution: 2019-07-20 20:02
-
-Contribution: 2019-07-21 20:00
-
-Contribution: 2019-07-24 20:00
-
-Contribution: 2019-07-24 20:01
-
-Contribution: 2019-07-24 20:02
-
-Contribution: 2019-07-24 20:03
-
-Contribution: 2019-07-26 20:00
-
-Contribution: 2019-07-26 20:01
-
-Contribution: 2019-07-26 20:02
-
-Contribution: 2019-07-26 20:03
-
-Contribution: 2019-07-26 20:04
-
-Contribution: 2019-07-27 20:00
-
-Contribution: 2019-07-29 20:00
-
-Contribution: 2019-07-29 20:01
-
-Contribution: 2019-07-29 20:02
-
-Contribution: 2019-07-29 20:03
-
-Contribution: 2019-07-29 20:04
-
-Contribution: 2019-07-29 20:05
-
-Contribution: 2019-07-29 20:06
-
-Contribution: 2019-08-01 20:00
-
-Contribution: 2019-08-01 20:01
-
-Contribution: 2019-08-01 20:02
-
-Contribution: 2019-08-01 20:03
-
-Contribution: 2019-08-01 20:04
-
-Contribution: 2019-08-01 20:05
-
-Contribution: 2019-08-03 20:00
-
-Contribution: 2019-08-03 20:01
-
-Contribution: 2019-08-03 20:02
-
-Contribution: 2019-08-03 20:03
-
-Contribution: 2019-08-03 20:04
-
-Contribution: 2019-08-03 20:05
-
-Contribution: 2019-08-03 20:06
-
-Contribution: 2019-08-03 20:07
-
-Contribution: 2019-08-06 20:00
-
-Contribution: 2019-08-06 20:01
-
-Contribution: 2019-08-06 20:02
-
-Contribution: 2019-08-07 20:00
-
-Contribution: 2019-08-08 20:00
-
-Contribution: 2019-08-08 20:01
-
-Contribution: 2019-08-08 20:02
-
-Contribution: 2019-08-09 20:00
-
-Contribution: 2019-08-09 20:01
-
-Contribution: 2019-08-09 20:02
-
-Contribution: 2019-08-09 20:03
-
-Contribution: 2019-08-09 20:04
-
-Contribution: 2019-08-10 20:00
-
-Contribution: 2019-08-10 20:01
-
-Contribution: 2019-08-10 20:02
-
-Contribution: 2019-08-10 20:03
-
-Contribution: 2019-08-11 20:00
-
-Contribution: 2019-08-11 20:01
-
-Contribution: 2019-08-11 20:02
-
-Contribution: 2019-08-11 20:03
-
-Contribution: 2019-08-11 20:04
-
-Contribution: 2019-08-11 20:05
-
-Contribution: 2019-08-12 20:00
-
-Contribution: 2019-08-12 20:01
-
-Contribution: 2019-08-12 20:02
-
-Contribution: 2019-08-13 20:00
-
-Contribution: 2019-08-13 20:01
-
-Contribution: 2019-08-13 20:02
-
-Contribution: 2019-08-13 20:03
-
-Contribution: 2019-08-13 20:04
-
-Contribution: 2019-08-16 20:00
-
-Contribution: 2019-08-16 20:01
-
-Contribution: 2019-08-16 20:02
-
-Contribution: 2019-08-16 20:03
-
-Contribution: 2019-08-16 20:04
-
-Contribution: 2019-08-16 20:05
-
-Contribution: 2019-08-16 20:06
-
-Contribution: 2019-08-17 20:00
-
-Contribution: 2019-08-17 20:01
-
-Contribution: 2019-08-17 20:02
-
-Contribution: 2019-08-17 20:03
-
-Contribution: 2019-08-17 20:04
-
-Contribution: 2019-08-17 20:05
-
-Contribution: 2019-08-18 20:00
-
-Contribution: 2019-08-18 20:01
-
-Contribution: 2019-08-25 20:00
-
-Contribution: 2019-08-25 20:01
-
-Contribution: 2019-08-25 20:02
-
-Contribution: 2019-08-25 20:03
-
-Contribution: 2019-08-25 20:04
-
-Contribution: 2019-08-25 20:05
-
-Contribution: 2019-08-25 20:06
-
-Contribution: 2019-08-26 20:00
-
-Contribution: 2019-08-26 20:01
-
-Contribution: 2019-08-26 20:02
-
-Contribution: 2019-08-26 20:03
-
-Contribution: 2019-08-26 20:04
-
-Contribution: 2019-08-26 20:05
-
-Contribution: 2019-08-26 20:06
-
-Contribution: 2019-08-26 20:07
-
-Contribution: 2019-08-28 20:00
-
-Contribution: 2019-08-28 20:01
-
-Contribution: 2019-08-28 20:02
-
-Contribution: 2019-08-28 20:03
-
-Contribution: 2019-08-28 20:04
-
-Contribution: 2019-08-29 20:00
-
-Contribution: 2019-08-29 20:01
-
-Contribution: 2019-08-29 20:02
-
-Contribution: 2019-08-29 20:03
-
-Contribution: 2019-08-29 20:04
-
-Contribution: 2019-08-29 20:05
-
-Contribution: 2019-08-30 20:00
-
-Contribution: 2019-08-30 20:01
-
-Contribution: 2019-08-30 20:02
-
-Contribution: 2019-08-30 20:03
-
-Contribution: 2019-08-30 20:04
-
-Contribution: 2019-08-30 20:05
-
-Contribution: 2019-09-01 20:00
-
-Contribution: 2019-09-01 20:01
-
-Contribution: 2019-09-01 20:02
-
-Contribution: 2019-09-01 20:03
-
-Contribution: 2019-09-01 20:04
-
-Contribution: 2019-09-02 20:00
-
-Contribution: 2019-09-02 20:01
-
-Contribution: 2019-09-02 20:02
-
-Contribution: 2019-09-02 20:03
-
-Contribution: 2019-09-03 20:00
-
-Contribution: 2019-09-03 20:01
-
-Contribution: 2019-09-03 20:02
-
-Contribution: 2019-09-04 20:00
-
-Contribution: 2019-09-04 20:01
-
-Contribution: 2019-09-04 20:02
-
-Contribution: 2019-09-04 20:03
-
-Contribution: 2019-09-04 20:04
-
-Contribution: 2019-09-05 20:00
-
-Contribution: 2019-09-05 20:01
-
-Contribution: 2019-09-05 20:02
-
-Contribution: 2019-09-06 20:00
-
-Contribution: 2019-09-06 20:01
-
-Contribution: 2019-09-06 20:02
-
-Contribution: 2019-09-06 20:03
-
-Contribution: 2019-09-06 20:04
-
-Contribution: 2019-09-08 20:00
-
-Contribution: 2019-09-08 20:01
-
-Contribution: 2019-09-08 20:02
-
-Contribution: 2019-09-08 20:03
-
-Contribution: 2019-09-08 20:04
-
-Contribution: 2019-09-08 20:05
-
-Contribution: 2019-09-08 20:06
-
-Contribution: 2019-09-09 20:00
-
-Contribution: 2019-09-09 20:01
-
-Contribution: 2019-09-09 20:02
-
-Contribution: 2019-09-09 20:03
-
-Contribution: 2019-09-10 20:00
-
-Contribution: 2019-09-10 20:01
-
-Contribution: 2019-09-10 20:02
-
-Contribution: 2019-09-10 20:03
-
-Contribution: 2019-09-10 20:04
-
-Contribution: 2019-09-10 20:05
-
-Contribution: 2019-09-11 20:00
-
-Contribution: 2019-09-11 20:01
-
-Contribution: 2019-09-11 20:02
-
-Contribution: 2019-09-13 20:00
-
-Contribution: 2019-09-13 20:01
-
-Contribution: 2019-09-13 20:02
-
-Contribution: 2019-09-14 20:00
-
-Contribution: 2019-09-14 20:01
-
-Contribution: 2019-09-14 20:02
-
-Contribution: 2019-09-14 20:03
-
-Contribution: 2019-09-14 20:04
-
-Contribution: 2019-09-14 20:05
-
-Contribution: 2019-09-14 20:06
-
-Contribution: 2019-09-15 20:00
-
-Contribution: 2019-09-15 20:01
-
-Contribution: 2019-09-15 20:02
-
-Contribution: 2019-09-15 20:03
-
-Contribution: 2019-09-15 20:04
-
-Contribution: 2019-09-15 20:05
-
-Contribution: 2019-09-15 20:06
-
-Contribution: 2019-09-15 20:07
-
-Contribution: 2019-09-17 20:00
-
-Contribution: 2019-09-17 20:01
-
-Contribution: 2019-09-17 20:02
-
-Contribution: 2019-09-18 20:00
-
-Contribution: 2019-09-18 20:01
-
-Contribution: 2019-09-19 20:00
-
-Contribution: 2019-09-19 20:01
-
-Contribution: 2019-09-19 20:02
-
-Contribution: 2019-09-19 20:03
-
-Contribution: 2019-09-19 20:04
-
-Contribution: 2019-09-19 20:05
-
-Contribution: 2019-09-19 20:06
-
-Contribution: 2019-09-20 20:00
-
-Contribution: 2019-09-20 20:01
-
-Contribution: 2019-09-20 20:02
-
-Contribution: 2019-09-20 20:03
-
-Contribution: 2019-09-20 20:04
-
-Contribution: 2019-09-20 20:05
-
-Contribution: 2019-09-23 20:00
-
-Contribution: 2019-09-23 20:01
-
-Contribution: 2019-09-24 20:00
-
-Contribution: 2019-09-24 20:01
-
-Contribution: 2019-09-24 20:02
-
-Contribution: 2019-09-24 20:03
-
-Contribution: 2019-09-24 20:04
-
-Contribution: 2019-09-24 20:05
-
-Contribution: 2019-09-24 20:06
-
-Contribution: 2019-09-24 20:07
-
-Contribution: 2019-10-03 20:00
-
-Contribution: 2019-10-03 20:01
-
-Contribution: 2019-10-03 20:02
-
-Contribution: 2019-10-03 20:03
-
-Contribution: 2019-10-03 20:04
-
-Contribution: 2019-10-03 20:05
-
-Contribution: 2019-10-03 20:06
-
-Contribution: 2019-10-03 20:07
-
-Contribution: 2019-10-04 20:00
-
-Contribution: 2019-10-04 20:01
-
-Contribution: 2019-10-04 20:02
-
-Contribution: 2019-10-04 20:03
-
-Contribution: 2019-10-04 20:04
-
-Contribution: 2019-10-04 20:05
-
-Contribution: 2019-10-04 20:06
-
-Contribution: 2019-10-04 20:07
-
+[1] ICE Server provider
+AppRTC by default uses an ICE server provider to get TURN servers. Previously we used a [compute engine on demand service](https://github.com/juberti/computeengineondemand) (it created TURN server instances on demand in a region near the connecting users and stored them in shared memory) and web server with a REST API described in [draft-uberti-rtcweb-turn-rest-00](http://tools.ietf.org/html/draft-uberti-rtcweb-turn-rest-00). This has now been replaced with a Google service. It's similar from an AppRTC perspective but with a different [response format](https://github.com/webrtc/apprtc/blob/master/src/web_app/js/util.js#L77).
